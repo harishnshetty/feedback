@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ansible Feedback Viewer</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 40px 20px;
+      background: linear-gradient(to right, #e3f2fd, #fce4ec);
+      color: #333;
+      margin: 0;
+    }
+
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+
+    #entries {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .entry {
+      background: white;
+      border-left: 6px solid #2196f3;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      transition: transform 0.2s ease;
+    }
+
+    .entry:hover {
+      transform: scale(1.01);
+    }
+
+    .entry time {
+      font-size: 0.85rem;
+      color: #999;
+      display: block;
+      margin-bottom: 8px;
+    }
+
+    .entry p {
+      margin: 8px 0;
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+
+    .label {
+      font-weight: 600;
+      color: #555;
+    }
+
+    @media (max-width: 600px) {
+      .entry {
+        padding: 15px;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Ansible Feedback Entries (Latest First)</h2>
+  <div id="entries">Loading...</div>
+
+  <script>
+    const apiKey = "AIzaSyCepK4W-S9qKxy4yas67_1EQ-Y7X2-Wezk";
+    const sheetId = "19doHRzj0QWFPrf3-swIN5OO7EdISU8x8Ws4ed8j20Rs";
+    const sheetName = "sheet1";
+
+    async function fetchSheetData() {
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${sheetName}?key=${apiKey}`;
+      try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const rows = data.values;
+
+        if (!rows || rows.length <= 1) {
+          document.getElementById("entries").innerText = "No data found.";
+          return;
+        }
+
+        const ansibleRows = rows.slice(1).filter(row => row[1]?.trim() === "Docker");
+
+        ansibleRows.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+
+        const container = document.getElementById("entries");
+        container.innerHTML = "";
+
+        ansibleRows.forEach(row => {
+          const timestamp = row[0] || "N/A";
+          const name = row[2] || "N/A";
+          const reason = row[3] || "N/A";
+          
+
+          const entry = document.createElement("div");
+          entry.className = "entry";
+          entry.innerHTML = `
+            <time>${timestamp}</time>
+            <p><span class="label">Name:</span> ${name}</p>
+            <p><span class="label">Reason:</span> ${reason}</p>
+          `;
+          container.appendChild(entry);
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        document.getElementById("entries").innerText = "Failed to load data.";
+      }
+    }
+
+    fetchSheetData();
+  </script>
+
+</body>
+</html>
