@@ -66,39 +66,71 @@
         font-size: 1.5rem;
       }
     }
+    .entry {
+  transition: all 0.3s ease;
+  opacity: 1;
+}
+.entry[style*="display: none"] {
+  opacity: 0;
+}
+
   </style>
 </head>
 <body>
+<div style="max-width: 800px; margin: 0 auto; display: flex; justify-content: flex-start;">
+  <a href="index.html" style="
+    display: inline-block;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    background-color: #2196f3;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: background-color 0.3s;
+  " onmouseover="this.style.backgroundColor='#1976d2'" onmouseout="this.style.backgroundColor='#2196f3'">
+    ← Home
+  </a>
+</div>
 
   <h2>Ansible Feedback Entries (Latest First)</h2>
+<div style="max-width: 800px; margin: 0 auto 20px auto;">
+  <input
+    type="text"
+    id="searchBox"
+    placeholder="🔍 Search by name or reason..."
+    style="
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 2px solid #2196f3;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: border-color 0.3s;
+    "
+    onfocus="this.style.borderColor='#0d47a1'"
+    onblur="this.style.borderColor='#2196f3'"
+  />
+</div>
+
   <div id="entries">Loading...</div>
 
-  <script>
-    
-    const url = "https://script.google.com/macros/s/AKfycbx4L29GD0bk-n1H0MHf9y-tSSZKAiYcXiWgO_b9DWdnaU2b4KwWKB5haBxWjTN3CpxX/exec"; // secure Apps Script endpoint
+<script>
+  const url = "https://script.google.com/macros/s/AKfycbx4L29GD0bk-n1H0MHf9y-tSSZKAiYcXiWgO_b9DWdnaU2b4KwWKB5haBxWjTN3CpxX/exec";
+  let originalEntries = [];
 
-async function fetchSheetData() {
-  try {
-    const response = await fetch(url);
-    const rows = await response.json();
-
-    if (!Array.isArray(rows) || rows.length <= 1) {
-      document.getElementById("entries").innerText = "No data found.";
-      return;
-    }
-
-    const ansibleRows = rows.slice(1).filter(row => row[1]?.trim() === "Ansible");
-
-    ansibleRows.sort((a, b) => new Date(b[0]) - new Date(a[0]));
-
+  function renderEntries(entries) {
     const container = document.getElementById("entries");
     container.innerHTML = "";
 
-    ansibleRows.forEach(row => {
-      const timestamp = row[0] || "N/A";
-      const name = row[2] || "N/A";
-      const reason = row[3] || "N/A";
+    if (entries.length === 0) {
+      container.innerHTML = "<p style='text-align:center;'>No matching results found.</p>";
+      return;
+    }
 
+    entries.forEach(row => {
+      const [timestamp = "N/A", , name = "N/A", reason = "N/A"] = row;
       const entry = document.createElement("div");
       entry.className = "entry";
       entry.innerHTML = `
@@ -108,15 +140,49 @@ async function fetchSheetData() {
       `;
       container.appendChild(entry);
     });
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    document.getElementById("entries").innerText = "Failed to load data.";
   }
-}
 
-fetchSheetData();
+  async function fetchSheetData() {
+    try {
+      const response = await fetch(url);
+      const rows = await response.json();
 
-  </script>
+      if (!Array.isArray(rows) || rows.length <= 1) {
+        document.getElementById("entries").innerText = "No data found.";
+        return;
+      }
+
+      originalEntries = rows.slice(1).filter(row => row[1]?.trim() === "Ansible");
+      originalEntries.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+
+      renderEntries(originalEntries);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      document.getElementById("entries").innerText = "Failed to load data.";
+    }
+  }
+
+  fetchSheetData();
+
+  document.getElementById("searchBox").addEventListener("input", function () {
+    const keyword = this.value.trim().toLowerCase();
+    if (!keyword) {
+      renderEntries(originalEntries);
+      return;
+    }
+
+    const filtered = originalEntries.filter(row => {
+      const text = row.join(" ").toLowerCase();
+      return text.includes(keyword);
+    });
+
+    renderEntries(filtered);
+  });
+</script>
+
+<footer style="text-align:center; margin-top:40px; font-size:0.9rem; color:#666;">
+  Developed by Harish N Shetty • <a href="https://github.com/harishnshetty" target="_blank">GitHub</a>
+</footer>
 
 </body>
 </html>

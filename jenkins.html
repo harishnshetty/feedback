@@ -71,7 +71,11 @@
 <body>
 
   <h2>Jenkins Feedback Entries (Latest First)</h2>
-  <div id="entries">Loading...</div>
+  <div id="entries">
+  <div style="text-align:center;">
+    <span class="loader">⏳ Loading entries...</span>
+  </div>
+</div>
 
   <script>
     
@@ -115,6 +119,11 @@ async function fetchSheetData() {
 }
 
 fetchSheetData();
+
+if (ansibleRows.length === 0) {
+  container.innerHTML = "<p style='text-align:center;'>No Jenkins feedback found.</p>";
+  return;
+}
 
   </script>
 
