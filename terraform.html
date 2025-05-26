@@ -7,16 +7,16 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      padding: 40px 20px;
       background: linear-gradient(to right, #e3f2fd, #fce4ec);
       color: #333;
       margin: 0;
+      padding: 0 20px 40px;
     }
 
     h2 {
       text-align: center;
       color: #2c3e50;
-      margin-bottom: 30px;
+      margin: 20px 0;
       font-size: 2rem;
     }
 
@@ -66,66 +66,155 @@
         font-size: 1.5rem;
       }
     }
+
+    .entry {
+      transition: all 0.3s ease;
+      opacity: 1;
+    }
+
+    .entry[style*="display: none"] {
+      opacity: 0;
+    }
+
+    .sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: #e3f2fd;
+      padding: 10px 0 15px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    a.button-link {
+      display: inline-block;
+      padding: 10px 16px;
+      background-color: #2196f3;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: background-color 0.3s;
+      margin-bottom: 10px;
+    }
+
+    a.button-link:hover {
+      background-color: #1976d2;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 1rem;
+      border: 2px solid #2196f3;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: border-color 0.3s;
+    }
+
+    input[type="text"]:focus {
+      border-color: #0d47a1;
+      outline: none;
+    }
   </style>
 </head>
 <body>
 
-  <h2>Terraform Feedback Entries (Latest First)</h2>
-  <div id="entries">
-  <div style="text-align:center;">
-    <span class="loader">⏳ Loading entries...</span>
-  </div>
+  <header class="sticky-header">
+   <div style="max-width: 800px; margin: 0 auto; padding: 10px 0;">
+  <a href="https://harishnshetty.github.io/resume/tools/an/" class="button-link" style="margin-bottom: 10px;">← Home</a>
+  
+  <h4 style="margin: 10px 0 16px; font-size: 1.0rem; text-align: center; color: #2c3e50;">
+    Terraform Feedback Entries (Latest First)
+  </h4>
+
+  <input
+    type="text"
+    id="searchBox"
+    placeholder="🔍 Search by name or reason..."
+    aria-label="Search feedback by name or reason"
+  />
 </div>
 
+  </header>
+
+  <main>
+    <div id="entries">Loading...</div>
+  </main>
+
+  <footer>
+    Developed by Harish N Shetty • <a href="https://github.com/harishnshetty" target="_blank">GitHub</a>
+  </footer>
+
   <script>
-    
-    const url = "https://script.google.com/macros/s/AKfycbx4L29GD0bk-n1H0MHf9y-tSSZKAiYcXiWgO_b9DWdnaU2b4KwWKB5haBxWjTN3CpxX/exec"; // secure Apps Script endpoint
+    const url = "https://script.google.com/macros/s/AKfycbx4L29GD0bk-n1H0MHf9y-tSSZKAiYcXiWgO_b9DWdnaU2b4KwWKB5haBxWjTN3CpxX/exec";
+    let originalEntries = [];
 
-async function fetchSheetData() {
-  try {
-    const response = await fetch(url);
-    const rows = await response.json();
+    function renderEntries(entries) {
+      const container = document.getElementById("entries");
+      container.innerHTML = "";
 
-    if (!Array.isArray(rows) || rows.length <= 1) {
-      document.getElementById("entries").innerText = "No data found.";
-      return;
+      if (entries.length === 0) {
+        container.innerHTML = "<p style='text-align:center;'>No matching results found.</p>";
+        return;
+      }
+
+      entries.forEach(row => {
+        const [timestamp = "N/A", , name = "N/A", reason = "N/A"] = row;
+        const entry = document.createElement("div");
+        entry.className = "entry";
+        entry.innerHTML = `
+          <time>${timestamp}</time>
+          <p><span class="label">Name:</span> ${name}</p>
+          <p><span class="label">Reason:</span> ${reason}</p>
+        `;
+        container.appendChild(entry);
+      });
     }
 
-    const ansibleRows = rows.slice(1).filter(row => row[1]?.trim() === "Terraform");
+    async function fetchSheetData() {
+      try {
+        const response = await fetch(url);
+        const rows = await response.json();
 
-    ansibleRows.sort((a, b) => new Date(b[0]) - new Date(a[0]));
+        if (!Array.isArray(rows) || rows.length <= 1) {
+          document.getElementById("entries").innerText = "No data found.";
+          return;
+        }
 
-    const container = document.getElementById("entries");
-    container.innerHTML = "";
+        originalEntries = rows.slice(1).filter(row => row[1]?.trim() === "Terraform");
+        originalEntries.sort((a, b) => new Date(b[0]) - new Date(a[0]));
 
-    ansibleRows.forEach(row => {
-      const timestamp = row[0] || "N/A";
-      const name = row[2] || "N/A";
-      const reason = row[3] || "N/A";
+        renderEntries(originalEntries);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        document.getElementById("entries").innerText = "Failed to load data.";
+      }
+    }
 
-      const entry = document.createElement("div");
-      entry.className = "entry";
-      entry.innerHTML = `
-        <time>${timestamp}</time>
-        <p><span class="label">Name:</span> ${name}</p>
-        <p><span class="label">Reason:</span> ${reason}</p>
-      `;
-      container.appendChild(entry);
+    fetchSheetData();
+
+    document.getElementById("searchBox").addEventListener("input", function () {
+      const keyword = this.value.trim().toLowerCase();
+      if (!keyword) {
+        renderEntries(originalEntries);
+        return;
+      }
+
+      const filtered = originalEntries.filter(row => {
+        const text = row.join(" ").toLowerCase();
+        return text.includes(keyword);
+      });
+
+      renderEntries(filtered);
     });
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    document.getElementById("entries").innerText = "Failed to load data.";
-  }
-}
-
-fetchSheetData();
-
-if (ansibleRows.length === 0) {
-  container.innerHTML = "<p style='text-align:center;'>No terraform feedback found.</p>";
-  return;
-}
-
-
   </script>
 
 </body>
